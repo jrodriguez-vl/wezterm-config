@@ -5,6 +5,9 @@ local config = wezterm.config_builder()
 
 local sessionizer = wezterm.plugin.require "https://github.com/mikkasendke/sessionizer.wezterm"
 
+local workspace_switcher = wezterm.plugin.require("https://github.com/MLFlexer/smart_workspace_switcher.wezterm")
+workspace_switcher.apply_to_config(config)
+
 config.front_end = "OpenGL"
 config.max_fps = 144
 config.default_cursor_style = "BlinkingBlock"
@@ -41,20 +44,13 @@ config.initial_cols = 80
 config.hide_tab_bar_if_only_one_tab = true
 config.use_fancy_tab_bar = false
 
--- keymaps
-config.leader = {
-    key = 's',
-    mods = 'CTRL',
-    timeout_milliseconds = 2000,
-}
-
 --workspace switcher
 config.default_workspace = "~"
 
 local function get_default_schema()
     local default_schema = {
-        sessionizer.DefaultWorkspace {},
-        sessionizer.AllActiveWorkspaces {},
+        sessionizer.DefaultWorkspace { label_overwrite= "~" },
+        -- sessionizer.AllActiveWorkspaces {},
         processing = {
             sessionizer.for_each_entry(function(entry)
                 entry.label = entry.label:gsub(wezterm.home_dir, "~")
@@ -110,6 +106,13 @@ end
 local work_schema = build_schema({ "\\work\\vlg\\" })
 local game_schema = build_schema({ "\\gamedev\\" })
 
+-- keymaps
+config.leader = {
+    key = 'a',
+    mods = 'CTRL',
+    timeout_milliseconds = 2000,
+}
+
 config.keys = {
     --workspace switcher
     -- { key = "f", mods = "LEADER", action = workspace_switcher.switch_workspace(), },
@@ -123,9 +126,17 @@ config.keys = {
     { key = 'n', mods = 'LEADER', action = act.ActivateTabRelative(1) },
     -- Previous tab
     { key = 'p', mods = 'LEADER', action = act.ActivateTabRelative(-1) },
+
+
+    { key = '9', mods = 'LEADER', action = act.SwitchWorkspaceRelative(1) },
+    { key = '0', mods = 'LEADER', action = act.SwitchWorkspaceRelative(-1) },
+
     -- Close tab
-    -- { key = 'x', mods = 'LEADER', action = act.CloseCurrentTab({ confirm = true }) },
-    --
+    { key = 'x', mods = 'LEADER', action = act.CloseCurrentTab({ confirm = false }) },
+
+    { key = 'l', mods = 'LEADER', action = workspace_switcher.switch_to_prev_workspace() },
+    { key = 's', mods = 'LEADER', action = workspace_switcher.switch_workspace() },
+
     { key = 'f', mods = 'LEADER', action = sessionizer.show(work_schema) },
     { key = 'g', mods = 'LEADER', action = sessionizer.show(game_schema) },
 }
