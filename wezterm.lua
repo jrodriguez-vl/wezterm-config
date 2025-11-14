@@ -3,10 +3,7 @@ local wezterm = require("wezterm")
 local act = wezterm.action
 local config = wezterm.config_builder()
 
--- local workspace_switcher = wezterm.plugin.require("https://github.com/MLFlexer/smart_workspace_switcher.wezterm")
 local sessionizer = wezterm.plugin.require "https://github.com/mikkasendke/sessionizer.wezterm"
-
--- workspace_switcher.apply_to_config(config)
 
 config.front_end = "OpenGL"
 config.max_fps = 144
@@ -46,24 +43,78 @@ config.use_fancy_tab_bar = false
 
 -- keymaps
 config.leader = {
-    key = 'a',
+    key = 's',
     mods = 'CTRL',
-    timeout_milliseconds = 10000,
+    timeout_milliseconds = 2000,
 }
 
 --workspace switcher
--- config.default_workspace = "~"
+config.default_workspace = "~"
 
-local my_schema = {
-  -- "Workspace 1",  -- Simple string entry, expands to { label = "Workspace 1", id = "Workspace 1" }
-  sessionizer.DefaultWorkspace {},
-  sessionizer.AllActiveWorkspaces {},
-  -- sessionizer.FdSearch "~/my_projects", -- Searches for git repos in ~/my_projects
-}
+local function get_default_schema()
+    local default_schema = {
+        sessionizer.DefaultWorkspace {},
+        sessionizer.AllActiveWorkspaces {},
+        processing = {
+            sessionizer.for_each_entry(function(entry)
+                entry.label = entry.label:gsub(wezterm.home_dir, "~")
+            end)
+        }
+    }
+    return default_schema
+end
+
+
+local function list_directories_in_path(path)
+  local cmd
+  if wezterm.target_triple == 'x86_64-pc-windows-msvc' then
+    -- Windows command to list directories only
+    cmd = { 'cmd.exe', '/c', 'dir', path, '/AD', '/B' }
+  else
+    -- Linux/macOS command to list directories only
+    cmd = { 'ls', '-d', path .. '*/' }
+  end
+
+  local success, stdout, stderr = wezterm.run_child_process(cmd)
+
+  if success then
+    -- Split the output into lines and filter out empty strings
+    local directories = {}
+    for entry in stdout:gmatch("([^\r\n]+)") do
+      if entry ~= '' then
+        table.insert(directories, path .. entry)
+      end
+    end
+    return directories
+  else
+    wezterm.log_error('Error listing directories:', stderr)
+    return nil
+  end
+end
+
+local function build_schema(paths)
+    local results = get_default_schema()
+
+    for _, path in ipairs(paths) do
+        local search_path = wezterm.home_dir .. path
+        local to_add = list_directories_in_path(search_path)
+        for _, row in ipairs(to_add) do
+            local entry = { label = row, id = row }
+            table.insert(results, entry)
+        end
+    end
+
+    return results
+end
+
+local work_schema = build_schema({ "\\work\\vlg\\" })
+local game_schema = build_schema({ "\\gamedev\\" })
 
 config.keys = {
+    --workspace switcher
+    -- { key = "f", mods = "LEADER", action = workspace_switcher.switch_workspace(), },
   -- Split panes
-    { key = "v", mods = "LEADER", action = act.SplitHorizontal({ domain = "CurrentPaneDomain" }), }, -- Split vertically (right)
+    { key = "v", mods = "LEADER", action = act.SplitVertical({ domain = "CurrentPaneDomain" }), }, -- Split vertically (right)
     { key = "h", mods = "LEADER", action = act.SplitHorizontal({ domain = "CurrentPaneDomain" }), },-- Split horizontally (bottom)
 
     -- New tab
@@ -75,16 +126,8 @@ config.keys = {
     -- Close tab
     -- { key = 'x', mods = 'LEADER', action = act.CloseCurrentTab({ confirm = true }) },
     --
-  -- Switch between workspaces (Tmux sessions)
-    -- Show launcher to switch workspaces 
-    -- { key = "w", mods = "LEADER", action = act.ShowWorkspaces, },
-    -- Switch to a specific workspace
-    -- { key = 's', mods = 'LEADER', action = act.ShowLauncherArgs({ fuzzy = true }) },
-    -- Switch to next/previous workspace
-    { key = 'f', mods = 'LEADER', action = sessionizer.show(my_schema) },
-    { key = 'f', mods = 'LEADER', action = sessionizer.show(my_schema) },
-    -- { key = '(', mods = 'LEADER', action = act.SwitchWorkspaceRelative(-1) },
-    -- { key = "9", mods = "LEADER", action = act.PaneSelect },
+    { key = 'f', mods = 'LEADER', action = sessionizer.show(work_schema) },
+    { key = 'g', mods = 'LEADER', action = sessionizer.show(game_schema) },
 }
 
 
