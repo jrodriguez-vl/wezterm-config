@@ -3,6 +3,8 @@ local wezterm = require("wezterm")
 local act = wezterm.action
 local config = wezterm.config_builder()
 
+-- config.disable_default_key_bindings = true
+
 local sessionizer = wezterm.plugin.require "https://github.com/mikkasendke/sessionizer.wezterm"
 
 local workspace_switcher = wezterm.plugin.require("https://github.com/MLFlexer/smart_workspace_switcher.wezterm")
@@ -27,7 +29,6 @@ config.window_padding = {
 	top = 0,
 	bottom = 0,
 }
-
 
 config.window_frame = {
 	-- font = wezterm.font({ family = "Iosevka Custom", weight = "Regular" }),
@@ -114,9 +115,15 @@ config.leader = {
 }
 
 config.keys = {
-    --workspace switcher
-    -- { key = "f", mods = "LEADER", action = workspace_switcher.switch_workspace(), },
-  -- Split panes
+    --remove blocking default shortcuts
+    { key = "6", mods = "CTRL", action = wezterm.action.DisableDefaultAssignment, },
+
+    -- { key = "p", mods = "SHIFT|CTRL", action = wezterm.action.ActivateCommandPalette, },
+
+    -- send increment to neovim bb
+    { key = "a", mods = "LEADER|CTRL", action = act.SendKey { key = "a", mods = "CTRL" } },
+
+    -- Split panes
     { key = "v", mods = "LEADER", action = act.SplitVertical({ domain = "CurrentPaneDomain" }), }, -- Split vertically (right)
     { key = "h", mods = "LEADER", action = act.SplitHorizontal({ domain = "CurrentPaneDomain" }), },-- Split horizontally (bottom)
 
