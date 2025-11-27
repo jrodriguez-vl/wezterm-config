@@ -17,7 +17,7 @@ config.animation_fps = 1
 config.cursor_blink_rate = 500
 config.term = "xterm-256color" -- Set the terminal type
 
-config.font = wezterm.font("JetBrainsMono Nerd Font")
+config.font = wezterm.font("JetBrains Mono", { weight = 'Bold' })
 config.cell_width = 0.9
 config.window_background_opacity = 0.9
 config.prefer_egl = true
